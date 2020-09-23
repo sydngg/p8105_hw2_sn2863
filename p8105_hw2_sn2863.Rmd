@@ -1,0 +1,10 @@
+---
+title: "Homework 2 - Data Wrangling 1"
+author: "Sydney Ng (uni: sn2863)"
+date: "due 09/30/2020 by 10:00 pm EDT"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+```
