@@ -7,4 +7,30 @@ output: github_document
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(readxl)
 ```
+
+# Problem 1
+```{r}
+trash_dat = read_excel("hw2_prob1/Trash-Wheel-Collection-Totals-8-6-19.xlsx") %>%
+  janitor::clean_names()
+
+```
+
+# Problem 2
+```{r}
+subway_dat = read_csv("hw2_prob2/NYC_Transit_Subway_Entrance_And_Exit_Data.csv") %>%
+  janitor::clean_names() %>%
+  select(line, station_name, station_latitude, station_longitude, route1:route11,
+         entry, vending, entrance_type, ada) %>%
+  mutate(entry = ifelse(entry == "YES", 1, 0))
+
+
+```
+
+# Problem 3
+### Part A
+```{r}
+
+```
+
