@@ -74,11 +74,15 @@ subway_df <-
 head(subway_df) # just to check it out -- this was not asked for in hw
 ```
 
+This data set contains information about the New York City subway system's station entrances and exits, as well as train routes. It also contains information about vending, ADA compliance, staffing, and exact geographical coordinates.
+
+There are a total of `r nrow(subway_df)` observations in our final data set. We have specifically pulled line, station name, station latitude/longitude, routes, entry, vending, entrance type, and ADA compliance variables to work with.
+
 * There are **`r nrow(distinct(subway_df, station_name, line))`** distinct subway stations by station name and line.
 * There are **`r nrow(filter(subway_df, ada == TRUE))`** stations that are ADA compliant.
 * The proportion of station entrances / exits without vending that allow entrance is **`r nrow(filter(subway_df, vending == "NO" & entry == 1))/nrow(filter(subway_df, vending == "NO"))`**.
 
-### Reformat the data so route number and route name are distinct variables
+#### Reformat the data so route number and route name are distinct variables
 
 ```{r}
 # need to make all route# variable types consistent first before pivot_longer()
@@ -93,9 +97,11 @@ subway_reformat_df <-
   pivot_longer(route1:route11, names_prefix = "route",
                names_to = "route_num", values_to = "route") %>%
   drop_na(route)
+
+head(subway_reformat_df)
 ```
 
-Further filtering by the A route and answering questions:
+Further filtering by the A route and then answering questions:
 
 ```{r}
 distinct_stations_A <-
@@ -113,8 +119,59 @@ ada_stations_A <-
 * Of the stations that serve the A train, **`r nrow(ada_stations_A)`** are ADA compliant.
 
 # Problem 3
-### Part A
-```{r}
-pols_month_df <- read_csv("./hw2_prob3/pols-month.csv")
+#### Clean the data in `pols-month.csv`
+```{r message = FALSE}
+pols_month_df <- 
+  read_csv("./hw2_prob3/pols-month.csv") %>%
+  separate(mon, c("year", "month", "day"), convert = TRUE)
+
+month_df <- tibble(month= 01:12, month_name = month.name) # month names
+
+pols_month_df <- 
+  left_join(month_df, pols_month_df, by = "month") %>%
+  mutate(president = case_when(prez_gop == 1 ~ "Republican",
+                               prez_gop == 0 ~ "Democrat",
+                               prez_gop == 2 ~ "Other")) %>%
+  select(-prez_gop, -prez_dem, -day, -month) # removing variables
 ```
+
+#### Clean the data in `snp.csv` using a similar process to the above
+```{r message = FALSE}
+snp_df <- 
+  read_csv("./hw2_prob3/snp.csv") %>%
+  separate(date, c("month", "day", "year"), convert = TRUE) %>%
+  left_join(month_df, snp_df, by = "month") %>%
+  select(year, month_name, close)
+```
+
+#### Tidy the unemployment data so that it can be merged with the previous datasets.
+```{r message = FALSE}
+unemployment_df <- 
+  read_csv("./hw2_prob3/unemployment.csv") %>%
+  pivot_longer(2:13, names_to = "month", values_to = "unemployment")
+
+month_abb_df <- tibble(month = month.abb, month_name = month.name) # month names
+
+unemployment_df <- 
+  left_join(month_abb_df, unemployment_df, by = "month") %>%
+  mutate(year = Year) %>% # renaming Year to year to stay consistent
+  select(year, month_name, unemployment)
+```
+
+#### Join the datasets by merging `snp` into `pols`, and merging `unemployment` into the result.
+```{r}
+FiveThirtyEight_df <- 
+  left_join(snp_df, pols_month_df, by = c("year", "month_name")) %>%
+  left_join(unemployment_df, by = c("year", "month_name"))
+
+head(FiveThirtyEight_df)
+```
+
+The `pols-month` data set gives us information about the number of national politicians who are Democratic or Republican at any given date. Variables describe the number of representatives at different levels including the Executive level, senators and House Reps, and governors. The range of years is from `r min(pull(pols_month_df, year))` to `r max(pull(pols_month_df, year))`.
+
+The `snp` data set gives us information about the S&P stock market index with a date variable and the closing value of the index on that date. The range of years is from `r min(pull(snp_df, year))` to `r max(pull(snp_df, year))`.
+
+The `unemployment` data set gives us information about percentages of unemployment given a year and month. The range of years is from `r min(pull(unemployment_df, year))` to `r max(pull(unemployment_df, year))`.
+
+The combined data set `FiveThirtyEight` has `r nrow(FiveThirtyEight_df)` observations and `r ncol(FiveThirtyEight_df)` variables. The range of years is from `r min(pull(FiveThirtyEight_df, year))` to `r max(pull(FiveThirtyEight_df, year))` and features important variables including the S&P stock market index at close, unemployment percentages, and whether the President was a Democrat or Republican at the time.
 
